@@ -28,7 +28,7 @@ chrome.webNavigation.onCompleted.addListener((details) => {
             console.error('Error in ML model API call:', error);
           });
 
-          return true
+        return true
       }
     });
   }
@@ -64,13 +64,31 @@ chrome.webNavigation.onCompleted.addListener((details) => {
 
 function makeMLModelAPICall(data) {
   console.log("Making Model call");
+  fetch("https://lovelace.pythonanywhere.com/predict_csv", {
+    method: 'post',
+    mode: "no-cors", // no-cors, *cors, same-origin
+    cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+    credentials: "same-origin", // include, *same-origin, omit
+    headers: {
+      "Content-Type": "application/json",
+      // 'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    redirect: "follow", // manual, *follow, error
+    referrerPolicy: "no-referrer",
+    body: data
+  }).then((res) => {
+    console.log(res)
+  }).then((resonse) => {
+    console.log(resonse)
+  }).catch((err) => {
+    console.log(err)
+  })
 
   // Simulate an asynchronous call with a Promise and setTimeout
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       console.log("waiting..... 3 seconds");
-      resolve({ total: 10, dangers: 4, warnings: 6, extra:data });
+      resolve({ total: 10, dangers: 4, warnings: 6, extra: data });
     }, 3000);
   });
 }
-

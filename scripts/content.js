@@ -1,3 +1,5 @@
+
+
 // (async () => {
 //     console.log("Hey i am from content script")
 //     // const currentProduct=""
@@ -27,7 +29,7 @@
 //     updateProductPage();
 //     // content.js
 
-    
+
 //   }
 //   if((message.action === 'mlModelResponse')){
 //       console.log("message from background-->", message.data)
@@ -48,8 +50,10 @@
 //     chrome.runtime.sendMessage({ action: 'scrapedData', data: "I am Paragraph" });
 // }
 
-
 // content.js
+
+
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'startDataScraping') {
     console.log("Recieved the scrapping request from background.js")
@@ -71,6 +75,79 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 function scrapeData() {
   // Replace this with your actual data scraping logic
-  return 'Scraped data';
+  // const filePath = '../readData.csv';
+
+  console.log("Scrapped data here ")
+
+
+
+  var paragraphsContent = {}
+  const paragraphs = document.getElementsByTagName('p')
+
+  for (var i = 0; i < paragraphs.length; i++) {
+    paragraphsContent[i] = paragraphs[i].textContent
+  }
+
+
+
+  var spanContent = {}
+  const spanTag = document.getElementsByTagName('span')
+
+  for (var i = 0; i < spanTag.length; i++) {
+    spanContent[i] = spanTag[i].textContent
+  }
+
+  // const keys = paragraphsContent.keys()
+  // const value = paragraphsContent.values()
+  // const id = keys.join(',');
+  // const text = value.join(',');
+  // var contentCSV = convertDictionaryToCSV(paragraphsContent)
+  // downloadCSV(contentCSV, "data.csv")
+  // console.log("pragraph content " + paragraphsContent[0])
+  // console.log("span content " + spanContent[0])
+
+  const csvfile = saveDictionaryToCSV({ ...paragraphsContent, ...spanContent }, "data.csv")
+  console.log(csvfile.text())
+  return csvfile
+
+  // return 'Scraped data';
 }
 
+
+// function convertDictionaryToCSV(dictionary) {
+//   var csvData = []
+
+//   for(var i=0; i<dictionary.length; i++){
+//     csvData.push([i,dictionary[i]])
+//   }
+
+//   return csvContent;
+// }
+
+// function downloadCSV(csvContent, fileName) {
+//   const blob = new Blob([csvContent], { type: 'text/csv' });
+//   const url = URL.createObjectURL(blob);
+
+//   const a = document.createElement('a');
+//   a.href = url;
+//   a.download = fileName;
+//   document.body.appendChild(a);
+//   a.click();
+//   document.body.removeChild(a);
+// }
+
+
+function saveDictionaryToCSV(dictionary, filename, header = ['page_id', 'text']) {
+  const csvContent = [header.join(',')]
+    .concat(Object.entries(dictionary)
+      .map(([key, value]) => `${key}, ${value}`)
+      .join('\n')
+    );
+
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  return blob
+}
