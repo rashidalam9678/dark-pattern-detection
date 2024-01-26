@@ -34,5 +34,8 @@
       "default_title": "My Detection",
       "default_popup": "popup/popup.html"
     },
+    "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self';"
+    },
     "manifest_version": 3
 }
