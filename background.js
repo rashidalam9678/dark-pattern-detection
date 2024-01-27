@@ -88,9 +88,9 @@ async function makeMLModelAPICall(data) {
 
   const response = await fetch("https://shanurr02.pythonanywhere.com/predict_text", {
     method: 'post',
-    mode: "no-cors", // no-cors, *cors, same-origin
-    cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-    credentials: "same-origin", // include, *same-origin, omit
+    // mode: "no-cors", // no-cors, *cors, same-origin
+    // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+    // credentials: "include", // include, *same-origin, omit
     headers: {
       "Content-Type": "application/json",
       // 'Content-Type': 'application/x-www-form-urlencoded',
@@ -101,7 +101,7 @@ async function makeMLModelAPICall(data) {
 
   })
   console.log("output1")
-  const output = await response
+  const output = await response.json()
   console.log("output2", output)
 
   return output
