@@ -10,23 +10,23 @@ chrome.webNavigation.onCompleted.addListener((details) => {
     console.log("scrapping signal sent")
 
     // Step 3: Receive message from content script indicating data scraping completion
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       if (message.action === 'dataScraped' && sender.tab.id === tabId) {
         // Step 4: Make ML model API call
         console.log("recieved the scrapped data")
-        makeMLModelAPICall(message.data)
-          .then((mlModelResponse) => {
-            // Step 5: Send ML model response to content script
-            console.log("sending api data to content script")
-            chrome.tabs.sendMessage(tabId, { action: 'mlModelResponse', data: mlModelResponse });
-
-            // Step 6: Send ML model response to popup
-            console.log("sending api data to popup")
-            chrome.runtime.sendMessage({ action: 'mlModelResponse', data: mlModelResponse });
-          })
-          .catch((error) => {
-            console.error('Error in ML model API call:', error);
-          });
+        const output = await makeMLModelAPICall(message.data)
+        console.log(output)
+        // .then((mlModelResponse) => {
+        //   // Step 5: Send ML model response to content script
+        //   console.log("sending api data to content script")
+        //   chrome.tabs.sendMessage(tabId, { action: 'mlModelResponse', data: mlModelResponse })
+        //   // Step 6: Send ML model response to popup
+        //   console.log("sending api data to popup")
+        //   chrome.runtime.sendMessage({ action: 'mlModelResponse', data: mlModelResponse });
+        // })
+        // .catch((error) => {
+        //   console.error('Error in ML model API call:', error);
+        // });
 
         return true
       }
@@ -62,9 +62,31 @@ chrome.webNavigation.onCompleted.addListener((details) => {
 //   }
 // });
 
-function makeMLModelAPICall(data) {
+async function makeMLModelAPICall(data) {
   console.log("Making Model call");
-  fetch("https://lovelace.pythonanywhere.com/predict_csv", {
+  console.log(data)
+  // fetch("https://shanurr02.pythonanywhere.com/predict_text", {
+  //   method: 'post',
+  //   mode: "no-cors", // no-cors, *cors, same-origin
+  //   cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+  //   credentials: "same-origin", // include, *same-origin, omit
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //     // 'Content-Type': 'application/x-www-form-urlencoded',
+  //   },
+  //   redirect: "follow", // manual, *follow, error
+  //   referrerPolicy: "no-referrer",
+  //   body: data
+  // }).then((res) => {
+  //   // console.log(res.json())
+  // }).then((resonse) => {
+  //   console.log(resonse)
+  // }).catch((err) => {
+  //   console.log(err)
+  // })
+
+
+  const response = await fetch("https://shanurr02.pythonanywhere.com/predict_text", {
     method: 'post',
     mode: "no-cors", // no-cors, *cors, same-origin
     cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
@@ -75,20 +97,22 @@ function makeMLModelAPICall(data) {
     },
     redirect: "follow", // manual, *follow, error
     referrerPolicy: "no-referrer",
-    body: data
-  }).then((res) => {
-    console.log(res)
-  }).then((resonse) => {
-    console.log(resonse)
-  }).catch((err) => {
-    console.log(err)
-  })
+    body: JSON.stringify(data)
 
+  })
+  console.log("output1")
+  const output = await response
+  console.log("output2", output)
+
+  return output
+  // return new Promise((resolve, reject) => {
+  //   return resolve({ output })
+  // })
   // Simulate an asynchronous call with a Promise and setTimeout
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      console.log("waiting..... 3 seconds");
-      resolve({ total: 10, dangers: 4, warnings: 6, extra: data });
-    }, 3000);
-  });
+  // return new Promise((resolve, reject) => {
+  //   setTimeout(() => {
+  //     console.log("waiting..... 3 seconds");
+  //     resolve({ total: 10, dangers: 4, warnings: 6, extra: data });
+  //   }, 3000);
+  // });
 }
