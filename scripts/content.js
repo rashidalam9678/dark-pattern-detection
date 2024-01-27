@@ -81,22 +81,24 @@ function scrapeData() {
 
 
 
-  var paragraphsContent = {}
+  var paragraphsContent = []
   const paragraphs = document.getElementsByTagName('p')
 
   for (var i = 0; i < paragraphs.length; i++) {
-    paragraphsContent[i] = paragraphs[i].textContent
+    // paragraphsContent[i] = paragraphs[i].textContent
+    paragraphsContent.push([i, paragraphs[i].textContent])
   }
 
 
 
-  var spanContent = {}
+  var spanContent = []
   const spanTag = document.getElementsByTagName('span')
 
   for (var i = 0; i < spanTag.length; i++) {
-    spanContent[i] = spanTag[i].textContent
+    // spanContent[i] = spanTag[i].textContent
+    spanContent.push([i, spanTag[i].textContent])
   }
-
+  return paragraphsContent.concat(spanContent)
   // const keys = paragraphsContent.keys()
   // const value = paragraphsContent.values()
   // const id = keys.join(',');
@@ -106,9 +108,9 @@ function scrapeData() {
   // console.log("pragraph content " + paragraphsContent[0])
   // console.log("span content " + spanContent[0])
 
-  const csvfile = saveDictionaryToCSV({ ...paragraphsContent, ...spanContent }, "data.csv")
-  console.log(csvfile.text())
-  return csvfile
+  // const csvfile = saveDictionaryToCSV({ ...paragraphsContent, ...spanContent }, "data.csv")
+  // console.log(csvfile.text())
+  // return csvfile
 
   // return 'Scraped data';
 }
@@ -137,17 +139,17 @@ function scrapeData() {
 // }
 
 
-function saveDictionaryToCSV(dictionary, filename, header = ['page_id', 'text']) {
-  const csvContent = [header.join(',')]
-    .concat(Object.entries(dictionary)
-      .map(([key, value]) => `${key}, ${value}`)
-      .join('\n')
-    );
+// function saveDictionaryToCSV(dictionary, filename, header = ['page_id', 'text']) {
+//   const csvContent = [header.join(',')]
+//     .concat(Object.entries(dictionary)
+//       .map(([key, value]) => `${key}, ${value}`)
+//       .join('\n')
+//     );
 
-  const blob = new Blob([csvContent], { type: 'text/csv' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  return blob
-}
+//   const blob = new Blob([csvContent], { type: 'text/csv' });
+//   const link = document.createElement('a');
+//   link.href = URL.createObjectURL(blob);
+//   link.download = filename;
+//   link.click();
+//   return blob
+// }
