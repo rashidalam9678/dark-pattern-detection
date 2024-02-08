@@ -2,75 +2,71 @@ chrome.webNavigation.onCompleted.addListener((details) => {
   const tabId = details.tabId;
   const tabUrl = details.url;
 
-  if (tabUrl.includes("flipkart.com") && tabUrl.includes("/p/")) {
+  if (tabUrl && tabUrl.includes("flipkart.com") && tabUrl.includes("/p/")) {
     // Step 1: Send message to content script to initiate data scraping
-    console.log("sending scrapping signal")
     chrome.tabs.sendMessage(tabId, { action: 'startDataScraping' });
-
-    console.log("scrapping signal sent")
-
-    // Step 3: Receive message from content script indicating data scraping completion
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (message.action === 'dataScraped' && sender.tab.id === tabId) {
-        // Step 4: Make ML model API call
-        console.log("recieved the scrapped data")
-        makeMLModelAPICall(message.data)
-          .then((mlModelResponse) => {
-            // Step 5: Send ML model response to content script
-            console.log("sending api data to content script")
-            chrome.tabs.sendMessage(tabId, { action: 'mlModelResponse', data: mlModelResponse });
-
-            // Step 6: Send ML model response to popup
-            console.log("sending api data to popup")
-            chrome.runtime.sendMessage({ action: 'mlModelResponse', data: mlModelResponse });
-          })
-          .catch((error) => {
-            console.error('Error in ML model API call:', error);
-          });
-
-          return true
-      }
-    });
   }
 
+  // Step 2: Receive message from content script indicating data scraping completion
+  chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    if (message.action === 'dataScraped' && sender.tab) {
+      const tabId = sender.tab.id;
+
+      // Step 3: Make ML model API call
+      try {
+        const mlModelResponse = await makeMLModelAPICall(message.data);
+
+        // Step 4: Send ML model response to content script
+        chrome.tabs.sendMessage(tabId, { action: 'mlModelResponse', data: mlModelResponse });
+
+        // Step 5: Save the model data for the popup.js
+        const keyForTab = `dataForTab_${tabId}`;
+        chrome.storage.local.set({ [keyForTab]: mlModelResponse }, () => {
+        });
+      } catch (error) {
+        console.error('Error in ML model API call:', error);
+      }
+    }
+    return true
+  });
 });
 
-// chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-//   if (message.action === 'scrapedData') {
-//     const paragraphs = message.data;
 
-//     console.log("Making call to ML model in background");
+// makeMLModelAPICall call the ML model via an API endpoint
+async function makeMLModelAPICall(data) {
+  try {
+    const response = await fetch("https://dbph-proxy-opg6dpgh6q-em.a.run.app/predict_text", {
+      method: 'post',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      redirect: "follow",
+      referrerPolicy: "no-referrer",
+      body: JSON.stringify(data)
+    });
 
-//     // Make a call to your ML model API with the scraped data
-//     // Use a Promise to handle the asynchronous behavior
-//     makeMLModelCall(paragraphs)
-//       .then(mlApiResponse => {
-//         console.log("sending data to scripts after receiving from model");
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
 
-//         // background.js
-//         const contentViews = chrome.extension.getViews({ type: 'tab' });
-//         if (contentViews.length > 0) {
-//           chrome.tabs.sendMessage(sender.tab.id, { action: 'mlModelResponse', data: mlApiResponse });
-//         }
+    const output = await response.json();
+    console.log("Model output:", output);
+    return output;
+  } catch (error) {
+    console.error("Error making API call:", error.message);
+    throw error;
+  }
+}
 
-
-//         // chrome.runtime.sendMessage({ action: 'mlModelResponse', data: mlApiResponse })
-//       })
-//       .catch(error => {
-//         console.error("Error in ML model call:", error);
-//       });
-//   }
-// });
-
-function makeMLModelAPICall(data) {
-  console.log("Making Model call");
-
-  // Simulate an asynchronous call with a Promise and setTimeout
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      console.log("waiting..... 3 seconds");
-      resolve({ total: 10, dangers: 4, warnings: 6, extra:data });
-    }, 3000);
+// Free the data of the tabs that have been closed
+chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+  const dataToRemoveKey = generateKeyForTab(tabId);
+  chrome.storage.local.remove(dataToRemoveKey, () => {
+    console.log(`Data for tab ${tabId} removed from local storage`);
   });
+});
+
+function generateKeyForTab(tabId) {
+  return `dataForTab_${tabId}`;
 }
 

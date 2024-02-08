@@ -1,62 +1,90 @@
-// import { getActiveTabURL } from "../utils";
-
 document.addEventListener('DOMContentLoaded', async function () {
-  let mlModelResponseData = {}
-
-  // get if this active tab have any already set data
-  // const activeTab = await getActiveTabURL();
-  // chrome.storage.local.get([activeTab.id], (result) => {
-  //   mlModelResponseData = JSON.parse(result.activeTab.id) || {};
-  // });
-
-  // Your action here
+  let mlModelResponseData
   let contentPlaceholder = document.getElementById("content-loader")
   let constentStatus = document.getElementById("content-status")
   let stats = document.getElementById("statistics")
 
-  
+  // get if this active tab have any already set data
+  const activeTab = await getActiveTabURL();
 
-  // popup.js
-  chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    if (message.action === 'mlModelResponse') {
-      mlModelResponseData = message.data;
+  if (activeTab.url && activeTab.url.includes("flipkart.com") && activeTab.url.includes("/p/")) {
+    const keyToRetrieve = generateKeyForTab(activeTab.id)
+    // Get data from chrome.storage.local for the specified key
+    chrome.storage.local.get(keyToRetrieve, (result) => {
+      const retrievedValue = result[keyToRetrieve];
+      if (retrievedValue) {
+        const sanatisedValue = JSON.parse(retrievedValue)
+        if (sanatisedValue.length > 0) {
+          mlModelResponseData = getStats(sanatisedValue)
+          setStatistics(mlModelResponseData)
+        }
+      }
+    });
 
-      // Save the data to chrome.storage.local
-      // chrome.storage.local.set({[activeTab.id]: JSON.stringify(mlModelResponseData) });
+  } else {
+    setStatistics(mlModelResponseData)
+  }
 
 
-      // Update your popup UI with the ML model response
-      console.log('ML Model Response in popup.js:', mlModelResponseData);
-      setStatistics(mlModelResponseData)
+  function generateKeyForTab(tabId) {
+    return `dataForTab_${tabId}`;
+  }
 
-      // For example, update a <div> with the mlResponse
-      document.getElementById('mlResponseDiv').textContent = JSON.stringify(mlModelResponseData);
+  //updating the extension UI
+  function getStats(sanatisedData) {
+    let urgencyCount = 0
+    let scarcityCount = 0
+    let socialProofCount = 0;
+    for (let i = 0; i < sanatisedData.length; i++) {
+      if (sanatisedData[i].prediction == "Urgency") {
+        urgencyCount++
+      } else if (sanatisedData[i].prediction == "Scarcity") {
+        scarcityCount++
+      } else if (sanatisedData[i].prediction == "Social Proof") {
+        socialProofCount++
+      }
     }
-  });
+
+    let statsData = {
+      "total": sanatisedData.length,
+      "urgency": urgencyCount,
+      "scarcity": scarcityCount,
+      "socialProof": socialProofCount
+    }
+    return statsData
+  }
+
+  async function getActiveTabURL() {
+    const tabs = await chrome.tabs.query({
+      currentWindow: true,
+      active: true
+    });
+    return tabs[0];
+  }
 
   function setStatistics(data) {
     contentPlaceholder.style.display = "none"
     constentStatus.textContent = "Reports"
     if (data) {
-      stats.innerHTML = `<h3><strong>Total Vulnerabilities detected: </strong> ${data.total}</h3>
+      stats.innerHTML = `<h4><strong>Total word nodes analysed: </strong> ${data.total}</h4>
                       <hr>
                       <div class="alert alert-danger" role="alert">
-                        <p><strong>Severe Vulnerabilities: </strong> ${data.dangers}</p>
+                        Urgencies found: ${data.urgency}
                       </div>
                       <div class="alert alert-warning" role="alert">
-                        <p><strong>Warnings: </strong> ${data.warnings}</p> 
-                      </div>`
+                          Warnings found: ${data.scarcity}
+                      </div>
+                      <div class="alert alert-primary" role="alert">
+                        Social Proofs: ${data.socialProof}
+                      </div>
+                      `
     } else {
       stats.innerHTML = `<div class="alert alert-success" role="alert">
-                                No vulnerabilities found
-                            </div>`
+                                Not a product page
+                        </div>`
     }
   }
 
 });
-
-
-
-
 
 
